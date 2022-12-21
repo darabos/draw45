@@ -6,17 +6,15 @@
   <meta name="viewport" content="width=device-width" />
   <title>Draw 45°</title>
   <style>
-    :root {
-      --accent: #aaa;
-    }
-
     body {
+      background: #fff4e8;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
 
     canvas {
+      background: #fff;
       border: 1px solid black;
     }
 
@@ -70,6 +68,7 @@
     <button onclick="press('d')" data-tooltip="Shift. Shortcut: D">→</button>
     <button onclick="press('w')" data-tooltip="Shift. Shortcut: W">↑</button>
     <button onclick="press('s')" data-tooltip="Shift. Shortcut: S">↓</button>
+    <button onclick="press('z')" data-tooltip="Shortcut: Z">Undo</button>
     <button id="clearButton">Clear</button>
     <button id="saveButton">Save</button>
     <button>
@@ -78,8 +77,8 @@
         <input type="file" id="loadButton">
       </label>
     </button>
-    <label><input type="checkbox" id="mirrorX"><br>Mirror X</label>
-    <label><input type="checkbox" id="mirrorY"><br>Mirror Y</label>
+    <label><input type="checkbox" id="mirrorX" data-tooltip="Shortcut: X"><br>Mirror X</label>
+    <label><input type="checkbox" id="mirrorY" data-tooltip="Shortcut: Y"><br>Mirror Y</label>
     <label><input type="checkbox" id="eraser" data-tooltip="Shortcut: Shift"><br>Eraser</label>
     <label><input id="lineBox" style="width: 30px;"><br>Line</label>
     <label><input id="widthBox" style="width: 30px;"><input id="heightBox" style="width: 30px;"><br>Canvas</label>
@@ -88,6 +87,7 @@
   <a style="display: none;" id="hiddenLink">hidden link</a>
   <script>
     let D = JSON.parse(localStorage.getItem('drawing') || '{}');
+    const history = [{ ...D }];
     let tool = 1;
     let pos = 0;
     const S = 20;
@@ -158,7 +158,15 @@
         shift(-1, 0);
       } else if (key === 'w') {
         shift(0, 1);
-      } else {
+      } else if (key === 'z') {
+        undo();
+      } else if (key === 'x') {
+        mirrorX.checked = !mirrorX.checked;
+        localStorage.setItem('mirrorX', JSON.stringify(mirrorX.checked));
+      } else if (key === 'y') {
+        mirrorY.checked = !mirrorY.checked;
+        localStorage.setItem('mirrorY', JSON.stringify(mirrorY.checked));
+      } else if ('1234'.includes(key)) {
         tool = Math.pow(2, parseInt(key) - 1);
       }
       drawAll();
@@ -191,18 +199,34 @@
         if (mirrorX.checked && mirrorY.checked) {
           mark(W - x + ({ 1: 1 }[tool] || 0), H - y + ({ 2: 1 }[tool] || 0), tool, e.shiftKey);
         }
-        save();
       }
       drawAll();
     }
 
     function save() {
+      console.log('save', history.length);
       for (const k in D) {
         if (!D[k]) delete D[k];
       }
+      const last = history[history.length - 1];
+      if (Object.keys(last).length === Object.keys(D).length && Object.keys(last).every(k => last[k] === D[k])) {
+        return;
+      }
       localStorage.setItem('drawing', JSON.stringify(D));
+      history.push({ ...D });
+      console.log('save2', history.length);
     }
 
+    function undo() {
+      console.log('undo', history.length);
+      if (history.length < 2) return;
+      history.pop();
+      D = { ...history[history.length - 1] };
+      save();
+      drawAll();
+    }
+
+    drawAll();
     function drawAll() {
       ctx.lineWidth = lineBox.value;
       ctx.lineCap = 'round';
@@ -212,10 +236,11 @@
       ctx.strokeStyle = '#f80';
       draw({ [pos]: tool });
     }
-    drawAll();
 
     canvas.onmousemove = paint;
-    canvas.onclick = paint;
+    canvas.onclick = e => { paint(e), save() };
+    canvas.onmouseup = save;
+    canvas.onmouseleave = save;
 
     clearButton.onclick = () => {
       D = {};
