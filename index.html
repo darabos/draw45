@@ -94,8 +94,8 @@
     let pos = 0;
     const S = 20;
     const SS = S / 2;
-    let W = localStorage.getItem('canvasWidth') || 30;
-    let H = localStorage.getItem('canvasHeight') || 30;
+    let W = parseInt(localStorage.getItem('canvasWidth') || 30);
+    let H = parseInt(localStorage.getItem('canvasHeight') || 30);
     canvas.width = W * S;
     canvas.height = H * S;
     widthBox.value = W;
@@ -107,13 +107,13 @@
       drawAll();
     };
     widthBox.oninput = () => {
-      W = widthBox.value;
+      W = parseInt(widthBox.value);
       canvas.width = W * S;
       localStorage.setItem('canvasWidth', W);
       drawAll();
     };
     heightBox.oninput = () => {
-      H = heightBox.value;
+      H = parseInt(heightBox.value);
       canvas.height = H * S;
       localStorage.setItem('canvasHeight', H);
       drawAll();
@@ -186,11 +186,13 @@
       drawAll();
     }
 
-    function mark(x, y, tool, shift) {
+    function mark(x, y, tool, e) {
       const pos = `${x};${y}`;
       const t = D[pos] || 0;
-      if (shift ^ eraser.checked) {
+      if (e.shiftKey ^ eraser.checked) {
         D[pos] = t & ~tool;
+      } else if (e.altKey) {
+        D[pos] = 0;
       } else {
         D[pos] = t | tool;
       }
@@ -203,24 +205,23 @@
       const [x, y] = [Math.floor(offsetX / S), Math.floor(offsetY / S)];
       pos = `${x};${y}`;
       if (e.type === 'click' || e.buttons) {
-        mark(x, y, tool, e.shiftKey);
+        mark(x, y, tool, e);
         if (mirrorX.checked) {
-          mark(W - x - 1 + ({ 1: 1 }[tool] || 0), y, { 1: 1, 2: 2, 4: 8, 8: 4 }[tool], e.shiftKey);
+          mark(W - x - 1 + ({ 1: 1 }[tool] || 0), y, { 1: 1, 2: 2, 4: 8, 8: 4 }[tool], e);
         }
         if (mirrorY.checked) {
-          mark(x, H - y - 1 + ({ 2: 1 }[tool] || 0), { 1: 1, 2: 2, 4: 8, 8: 4 }[tool], e.shiftKey);
+          mark(x, H - y - 1 + ({ 2: 1 }[tool] || 0), { 1: 1, 2: 2, 4: 8, 8: 4 }[tool], e);
         }
-        if (mirrorX.checked && mirrorY.checked) {
-          mark(W - x - 1 + ({ 1: 1 }[tool] || 0), H - y - 1 + ({ 2: 1 }[tool] || 0), tool, e.shiftKey);
-        }
-        if (rotate180.checked) {
-          mark(W - x - 1 + ({ 1: 1 }[tool] || 0), H - y - 1 + ({ 2: 1 }[tool] || 0), tool, e.shiftKey);
+        if (mirrorX.checked && mirrorY.checked || rotate180.checked) {
+          mark(W - x - 1 + ({ 1: 1 }[tool] || 0), H - y - 1 + ({ 2: 1 }[tool] || 0), tool, e);
         }
         if (rotate90.checked) {
-          mark(W - y - 1 + ({ 2: 1 }[tool] || 0), x, { 1: 2, 2: 1, 4: 8, 8: 4 }[tool], e.shiftKey);
+          const k = Math.floor((H - W) / 2);
+          mark(W - 1 + k - y + ({ 2: 1 }[tool] || 0), k + x, { 1: 2, 2: 1, 4: 8, 8: 4 }[tool], e);
         }
         if (rotate180.checked && rotate90.checked) {
-          mark(y, H - x - 1 + ({ 1: 1 }[tool] || 0), { 1: 2, 2: 1, 4: 8, 8: 4 }[tool], e.shiftKey);
+          const k = Math.floor((W - H) / 2);
+          mark(k + y, H - 1 + k - x + ({ 1: 1 }[tool] || 0) - 1, { 1: 2, 2: 1, 4: 8, 8: 4 }[tool], e);
         }
       }
       drawAll();
@@ -231,10 +232,10 @@
         if (!D[k]) delete D[k];
       }
       const last = history[history.length - 1];
+      localStorage.setItem('drawing', JSON.stringify(D));
       if (Object.keys(last).length === Object.keys(D).length && Object.keys(last).every(k => last[k] === D[k])) {
         return;
       }
-      localStorage.setItem('drawing', JSON.stringify(D));
       history.push({ ...D });
     }
 
