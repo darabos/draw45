@@ -79,6 +79,8 @@
     </button>
     <label><input type="checkbox" id="mirrorX" data-tooltip="Shortcut: X"><br>Mirror X</label>
     <label><input type="checkbox" id="mirrorY" data-tooltip="Shortcut: Y"><br>Mirror Y</label>
+    <label><input type="checkbox" id="rotate90" data-tooltip="Shortcut: 9"><br>Rotate 90°</label>
+    <label><input type="checkbox" id="rotate180" data-tooltip="Shortcut: 8"><br>Rotate 180°</label>
     <label><input type="checkbox" id="eraser" data-tooltip="Shortcut: Shift"><br>Eraser</label>
     <label><input id="lineBox" style="width: 30px;"><br>Line</label>
     <label><input id="widthBox" style="width: 30px;"><input id="heightBox" style="width: 30px;"><br>Canvas</label>
@@ -92,8 +94,8 @@
     let pos = 0;
     const S = 20;
     const SS = S / 2;
-    let W = localStorage.getItem('canvasWidth') || 25;
-    let H = localStorage.getItem('canvasHeight') || 35;
+    let W = localStorage.getItem('canvasWidth') || 30;
+    let H = localStorage.getItem('canvasHeight') || 30;
     canvas.width = W * S;
     canvas.height = H * S;
     widthBox.value = W;
@@ -108,6 +110,12 @@
       W = widthBox.value;
       canvas.width = W * S;
       localStorage.setItem('canvasWidth', W);
+      drawAll();
+    };
+    heightBox.oninput = () => {
+      H = heightBox.value;
+      canvas.height = H * S;
+      localStorage.setItem('canvasHeight', H);
       drawAll();
     };
 
@@ -166,6 +174,12 @@
       } else if (key === 'y') {
         mirrorY.checked = !mirrorY.checked;
         localStorage.setItem('mirrorY', JSON.stringify(mirrorY.checked));
+      } else if (key === '8') {
+        rotate180.checked = !rotate180.checked;
+        localStorage.setItem('rotate180', JSON.stringify(rotate180.checked));
+      } else if (key === '9') {
+        rotate90.checked = !rotate90.checked;
+        localStorage.setItem('rotate90', JSON.stringify(rotate90.checked));
       } else if ('1234'.includes(key)) {
         tool = Math.pow(2, parseInt(key) - 1);
       }
@@ -191,20 +205,28 @@
       if (e.type === 'click' || e.buttons) {
         mark(x, y, tool, e.shiftKey);
         if (mirrorX.checked) {
-          mark(W - x + ({ 1: 1 }[tool] || 0), y, { 1: 1, 2: 2, 4: 8, 8: 4 }[tool], e.shiftKey);
+          mark(W - x - 1 + ({ 1: 1 }[tool] || 0), y, { 1: 1, 2: 2, 4: 8, 8: 4 }[tool], e.shiftKey);
         }
         if (mirrorY.checked) {
-          mark(x, H - y + ({ 2: 1 }[tool] || 0), { 1: 1, 2: 2, 4: 8, 8: 4 }[tool], e.shiftKey);
+          mark(x, H - y - 1 + ({ 2: 1 }[tool] || 0), { 1: 1, 2: 2, 4: 8, 8: 4 }[tool], e.shiftKey);
         }
         if (mirrorX.checked && mirrorY.checked) {
-          mark(W - x + ({ 1: 1 }[tool] || 0), H - y + ({ 2: 1 }[tool] || 0), tool, e.shiftKey);
+          mark(W - x - 1 + ({ 1: 1 }[tool] || 0), H - y - 1 + ({ 2: 1 }[tool] || 0), tool, e.shiftKey);
+        }
+        if (rotate180.checked) {
+          mark(W - x - 1 + ({ 1: 1 }[tool] || 0), H - y - 1 + ({ 2: 1 }[tool] || 0), tool, e.shiftKey);
+        }
+        if (rotate90.checked) {
+          mark(W - y - 1 + ({ 2: 1 }[tool] || 0), x, { 1: 2, 2: 1, 4: 8, 8: 4 }[tool], e.shiftKey);
+        }
+        if (rotate180.checked && rotate90.checked) {
+          mark(y, H - x - 1 + ({ 1: 1 }[tool] || 0), { 1: 2, 2: 1, 4: 8, 8: 4 }[tool], e.shiftKey);
         }
       }
       drawAll();
     }
 
     function save() {
-      console.log('save', history.length);
       for (const k in D) {
         if (!D[k]) delete D[k];
       }
@@ -214,11 +236,9 @@
       }
       localStorage.setItem('drawing', JSON.stringify(D));
       history.push({ ...D });
-      console.log('save2', history.length);
     }
 
     function undo() {
-      console.log('undo', history.length);
       if (history.length < 2) return;
       history.pop();
       D = { ...history[history.length - 1] };
@@ -272,6 +292,14 @@
     mirrorY.checked = JSON.parse(localStorage.getItem('mirrorY'));
     mirrorY.onchange = () => {
       localStorage.setItem('mirrorY', JSON.stringify(mirrorY.checked));
+    };
+    rotate90.checked = JSON.parse(localStorage.getItem('rotate90'));
+    rotate90.onchange = () => {
+      localStorage.setItem('rotate90', JSON.stringify(rotate90.checked));
+    };
+    rotate180.checked = JSON.parse(localStorage.getItem('rotate180'));
+    rotate180.onchange = () => {
+      localStorage.setItem('rotate180', JSON.stringify(rotate180.checked));
     };
   </script>
 </body>
