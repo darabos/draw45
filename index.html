@@ -146,7 +146,7 @@
     }
 
     function shift(dx, dy) {
-      const nd = [];
+      const nd = {};
       for (let x = 0; x < W; ++x) {
         for (let y = 0; y < H; ++y) {
           nd[`${x};${y}`] = D[`${x + dx};${y + dy}`] || 0;
