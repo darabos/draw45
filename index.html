@@ -87,36 +87,35 @@
   <canvas id="canvas"></canvas>
   <a style="display: none;" id="hiddenLink">hidden link</a>
   <script>
-    let D = JSON.parse(localStorage.getItem('drawing') || '[]');
+    let D = JSON.parse(localStorage.getItem('drawing') || '{}');
     let tool = 1;
     let pos = 0;
     const S = 20;
     const SS = S / 2;
-    const W = localStorage.getItem('canvasWidth') || 25;
-    const H = localStorage.getItem('canvasHeight') || 35;
+    let W = localStorage.getItem('canvasWidth') || 25;
+    let H = localStorage.getItem('canvasHeight') || 35;
     canvas.width = W * S;
     canvas.height = H * S;
-    const ctx = canvas.getContext('2d');
-    ctx.lineWidth = localStorage.getItem('lineWidth') || 3;
-    lineBox.value = ctx.lineWidth;
-    lineBox.oninput = e => {
-      ctx.lineWidth = lineBox.value;
-      localStorage.setItem('lineWidth', ctx.lineWidth);
-      drawAll();
-    };
     widthBox.value = W;
-    widthBox.oninput = () => {
-      canvas.width = widthBox.value * S;
-      localStorage.setItem('canvasWidth', widthBox.value);
+    heightBox.value = H;
+    const ctx = canvas.getContext('2d');
+    lineBox.value = localStorage.getItem('lineWidth') || 3;
+    lineBox.oninput = e => {
+      localStorage.setItem('lineWidth', lineBox.value);
       drawAll();
     };
-    ctx.lineCap = 'round';
+    widthBox.oninput = () => {
+      W = widthBox.value;
+      canvas.width = W * S;
+      localStorage.setItem('canvasWidth', W);
+      drawAll();
+    };
 
     function draw(d) {
       ctx.beginPath();
       for (let x = 0; x < W; ++x) {
         for (let y = 0; y < H; ++y) {
-          const t = d[x + W * y];
+          const t = d[`${x};${y}`];
           if (t & 1) {
             ctx.moveTo(x * S, y * S);
             ctx.lineTo(x * S, y * S + S);
@@ -142,10 +141,11 @@
       const nd = [];
       for (let x = 0; x < W; ++x) {
         for (let y = 0; y < H; ++y) {
-          nd[x + y * W] = D[x + dx + W * (y + dy)] || 0;
+          nd[`${x};${y}`] = D[`${x + dx};${y + dy}`] || 0;
         }
       }
       D = nd;
+      save();
     }
 
     document.onkeypress = e => press(e.key);
@@ -165,8 +165,7 @@
     }
 
     function mark(x, y, tool, shift) {
-      console.log({ x, y, tool, shift });
-      const pos = x + y * W;
+      const pos = `${x};${y}`;
       const t = D[pos] || 0;
       if (shift ^ eraser.checked) {
         D[pos] = t & ~tool;
@@ -175,13 +174,12 @@
       }
     }
 
-
     function paint(e) {
       let { offsetX, offsetY } = e;
       if (tool === 1) offsetX += S / 2;
       if (tool === 2) offsetY += S / 2;
       const [x, y] = [Math.floor(offsetX / S), Math.floor(offsetY / S)];
-      pos = x + y * W;
+      pos = `${x};${y}`;
       if (e.type === 'click' || e.buttons) {
         mark(x, y, tool, e.shiftKey);
         if (mirrorX.checked) {
@@ -193,12 +191,21 @@
         if (mirrorX.checked && mirrorY.checked) {
           mark(W - x + ({ 1: 1 }[tool] || 0), H - y + ({ 2: 1 }[tool] || 0), tool, e.shiftKey);
         }
-        localStorage.setItem('drawing', JSON.stringify(D));
+        save();
       }
       drawAll();
     }
 
+    function save() {
+      for (const k in D) {
+        if (!D[k]) delete D[k];
+      }
+      localStorage.setItem('drawing', JSON.stringify(D));
+    }
+
     function drawAll() {
+      ctx.lineWidth = lineBox.value;
+      ctx.lineCap = 'round';
       clear();
       ctx.strokeStyle = '#000';
       draw(D);
@@ -211,8 +218,8 @@
     canvas.onclick = paint;
 
     clearButton.onclick = () => {
-      D = [];
-      localStorage.setItem('drawing', JSON.stringify(D));
+      D = {};
+      save();
       drawAll();
     };
 
@@ -227,12 +234,11 @@
     loadButton.onchange = () => {
       const reader = new FileReader();
       reader.onload = e => {
-        console.log('onload', e);
         D = JSON.parse(e.target.result);
-        localStorage.setItem('drawing', JSON.stringify(D));
+        save();
         drawAll();
       };
-      reader.readAsText(load.files[0]);
+      reader.readAsText(loadButton.files[0]);
     };
     mirrorX.checked = JSON.parse(localStorage.getItem('mirrorX'));
     mirrorX.onchange = () => {
