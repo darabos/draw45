@@ -70,14 +70,14 @@
     <button onclick="press('s')" data-tooltip="Shift. Shortcut: S">↓</button>
     <button onclick="press('z')" data-tooltip="Shortcut: Z">Undo</button>
     <button id="clearButton">Clear</button>
-    <button id="saveButton">Save</button>
-    <button>
+    <button data-tooltip="Download JSON" id="saveButton">Save</button>
+    <button data-tooltip="Upload JSON">
       <label>
         Load
         <input type="file" id="loadButton">
       </label>
     </button>
-    <button>
+    <button data-tooltip="Add JSON to current drawing">
       <label>
         Add
         <input type="file" id="addButton">
@@ -90,7 +90,7 @@
     <label><input type="checkbox" id="eraser" data-tooltip="Shortcut: Shift"><br>Eraser</label>
     <label><input id="lineBox" style="width: 30px;"><br>Line</label>
     <label><input id="widthBox" style="width: 30px;"><input id="heightBox" style="width: 30px;"><br>Canvas</label>
-    <a href id="download" download="image.png">Download</a>
+    <a href id="download" download="image.png">PNG</a>
   </div>
   <canvas id="canvas"></canvas>
   <a style="display: none;" id="hiddenLink">hidden link</a>
