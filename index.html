@@ -77,6 +77,12 @@
         <input type="file" id="loadButton">
       </label>
     </button>
+    <button>
+      <label>
+        Add
+        <input type="file" id="addButton">
+      </label>
+    </button>
     <label><input type="checkbox" id="mirrorX" data-tooltip="Shortcut: X"><br>Mirror X</label>
     <label><input type="checkbox" id="mirrorY" data-tooltip="Shortcut: Y"><br>Mirror Y</label>
     <label><input type="checkbox" id="rotate90" data-tooltip="Shortcut: 9"><br>Rotate 90°</label>
@@ -84,6 +90,7 @@
     <label><input type="checkbox" id="eraser" data-tooltip="Shortcut: Shift"><br>Eraser</label>
     <label><input id="lineBox" style="width: 30px;"><br>Line</label>
     <label><input id="widthBox" style="width: 30px;"><input id="heightBox" style="width: 30px;"><br>Canvas</label>
+    <a href id="download" download="image.png">Download</a>
   </div>
   <canvas id="canvas"></canvas>
   <a style="display: none;" id="hiddenLink">hidden link</a>
@@ -221,7 +228,7 @@
         }
         if (rotate180.checked && rotate90.checked) {
           const k = Math.floor((W - H) / 2);
-          mark(k + y, H - 1 + k - x + ({ 1: 1 }[tool] || 0) - 1, { 1: 2, 2: 1, 4: 8, 8: 4 }[tool], e);
+          mark(k + y, H + k - x + ({ 1: 1 }[tool] || 0) - 1, { 1: 2, 2: 1, 4: 8, 8: 4 }[tool], e);
         }
       }
       drawAll();
@@ -254,6 +261,7 @@
       clear();
       ctx.strokeStyle = '#000';
       draw(D);
+      download.href = canvas.toDataURL('image/png').replace('image/png', 'image/octet-stream');
       ctx.strokeStyle = '#f80';
       draw({ [pos]: tool });
     }
@@ -285,6 +293,18 @@
         drawAll();
       };
       reader.readAsText(loadButton.files[0]);
+    };
+    addButton.onchange = () => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const nd = JSON.parse(e.target.result);
+        for (const k in nd) {
+          D[k] = nd[k];
+        }
+        save();
+        drawAll();
+      };
+      reader.readAsText(addButton.files[0]);
     };
     mirrorX.checked = JSON.parse(localStorage.getItem('mirrorX'));
     mirrorX.onchange = () => {
