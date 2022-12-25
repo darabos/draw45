@@ -210,6 +210,9 @@
 
     function paint(e) {
       let { offsetX, offsetY } = e;
+      const [rect] = canvas.getClientRects();
+      offsetX *= S * W / rect.width;
+      offsetY *= S * H / rect.height;
       if (tool === 1) offsetX += S / 2;
       if (tool === 2) offsetY += S / 2;
       const [x, y] = [Math.floor(offsetX / S), Math.floor(offsetY / S)];
